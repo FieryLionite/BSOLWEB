@@ -649,7 +649,92 @@ function createLoginDialog( _dialogData )
 ///          </summary>
 // #############################################################################################
 // @if function("get_integer_async") || function("get_string_async")
-function createInputDialog( _dialogData )
+function createInputDialog(_dialogData) {
+    var root = document.getElementById(g_CanvasName);
+
+    // Make containing DIV
+    var pParent = root.parentNode;
+    var div = document.createElement("div");
+    g_dialogName = "gm4html5_input_ID";
+    div.setAttribute("class", "gm4html5_login");
+    div.setAttribute("id", g_dialogName);
+    pParent.insertBefore(div, root.nextSibling);
+    div.innerHTML = `
+        <table>
+            <tr>
+                <td><label for="username" id="gm4html5_input_message_id">Message</label></td>
+            </tr>
+            <tr>
+                <td><input type="text" id="gm4html5_input_text_id" value="text" /></td>
+            </tr>
+        </table>
+        <div class="gm4html5_login_button"><input type="button" value="OK" id="gm4html5_input_ok_button_id"/></div>
+        <div class="gm4html5_cancel_button"><input type="button" value="Cancel" id="gm4html5_input_cancel_button_id" /></div>
+    `;
+
+    ReleaseBrowserInput();
+    g_DialogActive = true;
+
+    var input_message = document.getElementById("gm4html5_input_message_id");
+    var input_text = document.getElementById("gm4html5_input_text_id");
+    input_message.innerHTML = _dialogData.strings[0];
+    input_text.value = _dialogData.strings[1];
+
+    // Focus on the input field
+    input_text.focus();
+
+    function handleOkButton(e) {
+        e.preventDefault();
+        console.log('OK button pressed');
+        var text = input_text.value;
+
+        // Setup the ASYNC callback
+        var pAsync = AsyncAlloc_pop(g_dialogName);
+        if (!pAsync) return;
+        pAsync.username = "";
+        pAsync.password = "";
+        pAsync.value = parseFloat(text);
+        pAsync.result = text;
+        pAsync.m_Complete = true;
+        pAsync.m_Status = ASYNC_STATUS_LOADED;
+
+        pParent.removeChild(div);
+        g_DialogActive = false;
+        CaptureBrowserInput();
+        YYDialogRemoveAndKick(_dialogData.id);
+    }
+
+    function handleCancelButton(e) {
+        e.preventDefault();
+        console.log('Cancel button pressed');
+        pParent.removeChild(div);
+        g_DialogActive = false;
+
+        var pAsync = AsyncAlloc_pop(g_dialogName);
+        if (!pAsync) return;
+        pAsync.username = "";
+        pAsync.password = "";
+        pAsync.value = 0;
+        pAsync.result = "";
+        pAsync.m_Complete = true;
+        pAsync.m_Status = ASYNC_STATUS_ERROR;
+        CaptureBrowserInput();
+        YYDialogRemoveAndKick(_dialogData.id);
+    }
+
+    var ok = document.getElementById("gm4html5_input_ok_button_id");
+    ok.addEventListener('click', handleOkButton);
+    ok.addEventListener('touchend', handleOkButton, { passive: false });
+
+    var cancel = document.getElementById("gm4html5_input_cancel_button_id");
+    cancel.addEventListener('click', handleCancelButton);
+    cancel.addEventListener('touchend', handleCancelButton, { passive: false });
+
+    login_dialog_update();
+    g_pASyncManager.Add(_dialogData.id, null, ASYNC_USER, g_dialogName);
+}
+
+function createInputDialogBU( _dialogData )
 {
     //show_debug_message( "createInputDialog = " + _dialogData );
 	var root = document.getElementById(g_CanvasName);
